@@ -1,4 +1,5 @@
-﻿using SistemaAlumnosApi.Models;
+﻿using SistemaAlumnosApi.DTOs;
+using SistemaAlumnosApi.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -28,14 +29,14 @@ namespace SistemaAlumnosApi.Repositories.Interfaces
         /// </summary>
         /// <param name="entity">Instancia de Pregunta que se va a agregar.</param>
         /// <returns>El identificador de la nueva pregunta creada.</returns>
-        Task<int> CreateAsync(Pregunta entity);
+        Task<int> CreateAsync(PreguntaCreateDTO entity);
 
         /// <summary>
         /// Actualiza los datos de una pregunta existente en la base de datos.
         /// </summary>
         /// <param name="entity">Instancia de Pregunta con los valores actualizados.</param>
         /// <returns>True si la actualización fue exitosa, False en caso contrario.</returns>
-        Task<bool> UpdateAsync(Pregunta entity);
+        Task<bool> UpdateAsync(PreguntaUpdateDTO entity);
 
         /// <summary>
         /// Elimina una pregunta de la base de datos.

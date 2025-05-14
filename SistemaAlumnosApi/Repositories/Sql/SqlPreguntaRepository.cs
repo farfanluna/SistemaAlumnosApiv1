@@ -5,6 +5,8 @@ using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using SistemaAlumnosApi.DTOs;
+using SistemaAlumnosApi.Mappers;
 
 namespace SistemaAlumnosApi.Repositories.Sql
 {
@@ -26,7 +28,8 @@ namespace SistemaAlumnosApi.Repositories.Sql
         /// <summary>
         /// Obtiene todas las preguntas almacenadas en la base de datos.
         /// </summary>
-        /// <returns>Lista de preguntas.</returns>
+        /// <returns>Lista de preguntas en formato DTO.</returns>
+
         public async Task<IEnumerable<Pregunta>> GetAllAsync()
         {
             var list = new List<Pregunta>();
@@ -39,12 +42,14 @@ namespace SistemaAlumnosApi.Repositories.Sql
 
             while (await rd.ReadAsync())
             {
-                list.Add(new Pregunta
+                var entity = new Pregunta
                 {
                     PreguntaID = rd.GetInt32(0),
                     Texto = rd.GetString(1),
                     ExamenID = rd.GetInt32(2)
-                });
+                };
+
+                list.Add(entity);
             }
 
             return list;
@@ -54,7 +59,7 @@ namespace SistemaAlumnosApi.Repositories.Sql
         /// Obtiene una pregunta específica por su identificador.
         /// </summary>
         /// <param name="id">Identificador único de la pregunta.</param>
-        /// <returns>Instancia de Pregunta si existe, null si no se encuentra.</returns>
+        /// <returns>Pregunta en formato DTO si existe, null si no se encuentra.</returns>
         public async Task<Pregunta?> GetByIdAsync(int id)
         {
             const string sql = @"SELECT PreguntaID, Texto, ExamenID FROM Preguntas WHERE PreguntaID=@id";
@@ -67,21 +72,24 @@ namespace SistemaAlumnosApi.Repositories.Sql
 
             if (!await rd.ReadAsync()) return null;
 
-            return new Pregunta
+            var entity = new Pregunta
             {
                 PreguntaID = rd.GetInt32(0),
                 Texto = rd.GetString(1),
                 ExamenID = rd.GetInt32(2)
             };
-        }
 
+            return entity;
+        }
         /// <summary>
         /// Crea una nueva pregunta en la base de datos y devuelve su ID generado.
         /// </summary>
-        /// <param name="entity">Entidad Pregunta a insertar.</param>
+        /// <param name="dto">DTO con los datos de la nueva pregunta.</param>
         /// <returns>Identificador de la nueva pregunta.</returns>
-        public async Task<int> CreateAsync(Pregunta entity)
+        public async Task<int> CreateAsync(PreguntaCreateDTO dto)
         {
+            var entity = PreguntaMapper.ToEntity(dto);
+
             const string sql = @"
                 INSERT INTO Preguntas (Texto, ExamenID)
                 VALUES (@t, @e);
@@ -99,10 +107,12 @@ namespace SistemaAlumnosApi.Repositories.Sql
         /// <summary>
         /// Actualiza una pregunta existente en la base de datos.
         /// </summary>
-        /// <param name="entity">Entidad Pregunta con los valores actualizados.</param>
+        /// <param name="dto">DTO con los datos actualizados de la pregunta.</param>
         /// <returns>True si la actualización fue exitosa, False en caso contrario.</returns>
-        public async Task<bool> UpdateAsync(Pregunta entity)
+        public async Task<bool> UpdateAsync(PreguntaUpdateDTO dto)
         {
+            var entity = PreguntaMapper.ToEntity(dto);
+
             const string sql = @"
                 UPDATE Preguntas
                 SET Texto=@t, ExamenID=@e
