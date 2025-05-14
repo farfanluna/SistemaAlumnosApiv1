@@ -1,10 +1,10 @@
-﻿using SistemaAlumnosApi.DTOs;
-using SistemaAlumnosApi.Models;
+﻿using SistemaAlumnosApi.Models;
+using SistemaAlumnosApi.DTOs;
 
 namespace SistemaAlumnosApi.Mappers
 {
     /// <summary>
-    /// Clase que convierte entre Examen (Entidad) y ExamenDTO.
+    /// Clase que convierte entre Examen (Entidad), ExamenDTO, ExamenCreateDTO y ExamenUpdateDTO.
     /// </summary>
     public static class ExamenMapper
     {
@@ -19,22 +19,41 @@ namespace SistemaAlumnosApi.Mappers
             {
                 ExamenID = examen.ExamenID,
                 Titulo = examen.Titulo,
-                MateriaID = examen.MateriaID
+                MateriaID = examen.MateriaID,
+                FechaAplicacion = examen.FechaAplicacion
             };
         }
 
         /// <summary>
-        /// Convierte un DTO ExamenDTO a una entidad Examen.
+        /// Convierte un DTO ExamenCreateDTO a una entidad Examen.
+        /// Se utiliza para la creación de nuevos registros.
         /// </summary>
-        /// <param name="dto">Instancia de ExamenDTO.</param>
+        /// <param name="dto">Instancia de ExamenCreateDTO.</param>
         /// <returns>Examen con los valores del DTO.</returns>
-        public static Examen ToEntity(ExamenDTO dto)
+        public static Examen ToEntity(ExamenCreateDTO dto)
         {
             return new Examen
             {
-                ExamenID = dto.ExamenID,
                 Titulo = dto.Titulo,
-                MateriaID = dto.MateriaID
+                MateriaID = dto.MateriaID,
+                FechaAplicacion = dto.FechaAplicacion
+            };
+        }
+
+        /// <summary>
+        /// Convierte un DTO ExamenUpdateDTO a una entidad Examen.
+        /// Se utiliza para actualizar registros existentes.
+        /// </summary>
+        /// <param name="dto">Instancia de ExamenUpdateDTO.</param>
+        /// <returns>Examen con los valores del DTO.</returns>
+        public static Examen ToEntity(ExamenUpdateDTO dto)
+        {
+            return new Examen
+            {
+                ExamenID = dto.ExamenID, // 🔹 Asegura que el ID se mantenga en la actualización
+                Titulo = dto.Titulo,
+                MateriaID = dto.MateriaID,
+                FechaAplicacion = dto.FechaAplicacion
             };
         }
     }

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SistemaAlumnosApi.DTOs;
-using SistemaAlumnosApi.Models;
+using SistemaAlumnosApi.Mappers;
 using SistemaAlumnosApi.Repositories.Interfaces;
 using System.Threading.Tasks;
 
@@ -51,34 +51,40 @@ namespace SistemaAlumnosApi.Controllers
         /// <summary>
         /// Crea un nuevo examen en la base de datos.
         /// </summary>
-        /// <param name="dto">Objeto Examen con los datos a insertar.</param>
+        /// <param name="dto">Objeto ExamenCreateDTO con los datos a insertar.</param>
         /// <returns>El examen creado con su identificador asignado.</returns>
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] Examen dto)
+        public async Task<IActionResult> Create([FromBody] ExamenCreateDTO dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
             var id = await _repo.CreateAsync(dto);
-            dto.ExamenID = id;
+            var resultado = new ExamenDTO
+            {
+                ExamenID = id,
+                Titulo = dto.Titulo,
+                MateriaID = dto.MateriaID,
+                FechaAplicacion = dto.FechaAplicacion
+            };
 
-            return CreatedAtAction(nameof(GetById), new { id }, dto);
+            return CreatedAtAction(nameof(GetById), new { id }, resultado);
         }
 
         /// <summary>
         /// Actualiza los datos de un examen existente en la base de datos.
         /// </summary>
         /// <param name="id">Identificador único del examen.</param>
-        /// <param name="dto">Objeto Examen con los datos actualizados.</param>
+        /// <param name="dto">Objeto ExamenUpdateDTO con los datos actualizados.</param>
         /// <returns>Código HTTP 204 si la actualización fue exitosa, 404 si no se encuentra el examen.</returns>
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] Examen dto)
+        public async Task<IActionResult> Update(int id, [FromBody] ExamenUpdateDTO dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
             if (id != dto.ExamenID)
-                return BadRequest("El ID en la URL no coincide con el ID en el payload.");
+                return BadRequest("El ID en la URL no coincide con el ID en el cuerpo.");
 
             var updated = await _repo.UpdateAsync(dto);
             return updated ? NoContent() : NotFound();

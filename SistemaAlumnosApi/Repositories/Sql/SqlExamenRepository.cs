@@ -3,8 +3,9 @@ using SistemaAlumnosApi.DTOs;
 using SistemaAlumnosApi.Repositories.Interfaces;
 using SistemaAlumnosApi.Mappers;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Data.SqlClient;
+using System.Data.SqlClient;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace SistemaAlumnosApi.Repositories.Sql
@@ -31,7 +32,7 @@ namespace SistemaAlumnosApi.Repositories.Sql
         public async Task<IEnumerable<ExamenDTO>> GetAllAsync()
         {
             var list = new List<Examen>();
-            const string sql = @"SELECT ExamenID, Titulo, MateriaID FROM Examenes";
+            const string sql = @"SELECT ExamenID, Titulo, MateriaID, FechaAplicacion FROM Examenes";
 
             using var cn = new SqlConnection(_conn);
             using var cmd = new SqlCommand(sql, cn);
@@ -44,11 +45,12 @@ namespace SistemaAlumnosApi.Repositories.Sql
                 {
                     ExamenID = rd.GetInt32(0),
                     Titulo = rd.GetString(1),
-                    MateriaID = rd.GetInt32(2)
+                    MateriaID = rd.GetInt32(2),
+                    FechaAplicacion = rd.GetDateTime(3)
                 });
             }
 
-            return list.Select(ExamenMapper.ToDTO);
+            return list.Select(ExamenMapper.ToDTO).ToList(); // 🔹 Convierte entidades a DTOs
         }
 
         /// <summary>
@@ -58,7 +60,7 @@ namespace SistemaAlumnosApi.Repositories.Sql
         /// <returns>ExamenDTO si existe, null en caso contrario.</returns>
         public async Task<ExamenDTO?> GetByIdAsync(int id)
         {
-            const string sql = @"SELECT ExamenID, Titulo, MateriaID FROM Examenes WHERE ExamenID=@id";
+            const string sql = @"SELECT ExamenID, Titulo, MateriaID, FechaAplicacion FROM Examenes WHERE ExamenID=@id";
 
             using var cn = new SqlConnection(_conn);
             using var cmd = new SqlCommand(sql, cn);
@@ -72,26 +74,30 @@ namespace SistemaAlumnosApi.Repositories.Sql
             {
                 ExamenID = rd.GetInt32(0),
                 Titulo = rd.GetString(1),
-                MateriaID = rd.GetInt32(2)
+                MateriaID = rd.GetInt32(2),
+                FechaAplicacion = rd.GetDateTime(3)
             });
         }
 
         /// <summary>
         /// Crea un nuevo examen en la base de datos y devuelve su ID generado.
         /// </summary>
-        /// <param name="entity">Entidad Examen a insertar.</param>
+        /// <param name="dto">Objeto ExamenCreateDTO a insertar.</param>
         /// <returns>Identificador del nuevo examen.</returns>
-        public async Task<int> CreateAsync(Examen entity)
+        public async Task<int> CreateAsync(ExamenCreateDTO dto)
         {
+            var entidad = ExamenMapper.ToEntity(dto); // 🔹 Convierte DTO a entidad
+
             const string sql = @"
-                INSERT INTO Examenes (Titulo, MateriaID)
-                VALUES (@t, @m);
+                INSERT INTO Examenes (Titulo, MateriaID, FechaAplicacion)
+                VALUES (@t, @m, @f);
                 SELECT SCOPE_IDENTITY();";
 
             using var cn = new SqlConnection(_conn);
             using var cmd = new SqlCommand(sql, cn);
-            cmd.Parameters.AddWithValue("@t", entity.Titulo);
-            cmd.Parameters.AddWithValue("@m", entity.MateriaID);
+            cmd.Parameters.AddWithValue("@t", entidad.Titulo);
+            cmd.Parameters.AddWithValue("@m", entidad.MateriaID);
+            cmd.Parameters.AddWithValue("@f", entidad.FechaAplicacion);
             await cn.OpenAsync();
 
             return Convert.ToInt32(await cmd.ExecuteScalarAsync());
@@ -100,20 +106,23 @@ namespace SistemaAlumnosApi.Repositories.Sql
         /// <summary>
         /// Actualiza un examen existente en la base de datos.
         /// </summary>
-        /// <param name="entity">Entidad Examen con los valores actualizados.</param>
+        /// <param name="dto">Objeto ExamenUpdateDTO con los valores actualizados.</param>
         /// <returns>True si la actualización fue exitosa, False en caso contrario.</returns>
-        public async Task<bool> UpdateAsync(Examen entity)
+        public async Task<bool> UpdateAsync(ExamenUpdateDTO dto)
         {
+            var entidad = ExamenMapper.ToEntity(dto); // 🔹 Convierte DTO a entidad
+
             const string sql = @"
                 UPDATE Examenes
-                SET Titulo=@t, MateriaID=@m
+                SET Titulo=@t, MateriaID=@m, FechaAplicacion=@f
                 WHERE ExamenID=@id";
 
             using var cn = new SqlConnection(_conn);
             using var cmd = new SqlCommand(sql, cn);
-            cmd.Parameters.AddWithValue("@id", entity.ExamenID);
-            cmd.Parameters.AddWithValue("@t", entity.Titulo);
-            cmd.Parameters.AddWithValue("@m", entity.MateriaID);
+            cmd.Parameters.AddWithValue("@id", entidad.ExamenID);
+            cmd.Parameters.AddWithValue("@t", entidad.Titulo);
+            cmd.Parameters.AddWithValue("@m", entidad.MateriaID);
+            cmd.Parameters.AddWithValue("@f", entidad.FechaAplicacion);
             await cn.OpenAsync();
 
             return await cmd.ExecuteNonQueryAsync() > 0;

@@ -31,14 +31,14 @@ namespace SistemaAlumnosApi.Repositories.Interfaces
         /// </summary>
         /// <param name="entity">Instancia de Examen que se va a agregar.</param>
         /// <returns>El identificador del nuevo examen creado.</returns>
-        Task<int> CreateAsync(Examen entity);
+        Task<int> CreateAsync(ExamenCreateDTO entity);
 
         /// <summary>
         /// Actualiza los datos de un examen existente en la base de datos.
         /// </summary>
         /// <param name="entity">Instancia de Examen con los valores actualizados.</param>
         /// <returns>True si la actualización fue exitosa, False en caso contrario.</returns>
-        Task<bool> UpdateAsync(Examen entity);
+        Task<bool> UpdateAsync(ExamenUpdateDTO entity);
 
         /// <summary>
         /// Elimina un examen de la base de datos.
