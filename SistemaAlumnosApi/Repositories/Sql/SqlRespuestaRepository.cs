@@ -5,6 +5,8 @@ using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using SistemaAlumnosApi.DTOs;
+using SistemaAlumnosApi.Mappers;
 
 namespace SistemaAlumnosApi.Repositories.Sql
 {
@@ -48,7 +50,6 @@ namespace SistemaAlumnosApi.Repositories.Sql
             }
             return list;
         }
-
         /// <summary>
         /// Obtiene una respuesta específica por su identificador.
         /// </summary>
@@ -78,18 +79,20 @@ namespace SistemaAlumnosApi.Repositories.Sql
         /// </summary>
         /// <param name="entity">Entidad Respuesta a insertar.</param>
         /// <returns>Identificador de la nueva respuesta.</returns>
-        public async Task<int> CreateAsync(Respuesta entity)
+        public async Task<int> CreateAsync(RespuestaCreateDTO dto)
         {
             const string sql = @"
-                INSERT INTO Respuestas (Texto, EsCorrecta, PreguntaID)
-                VALUES (@t, @c, @p);
-                SELECT SCOPE_IDENTITY();";
+        INSERT INTO Respuestas (Texto, EsCorrecta, PreguntaID)
+        VALUES (@t, @c, @p);
+        SELECT SCOPE_IDENTITY();";
+
             using var cn = new SqlConnection(_conn);
             using var cmd = new SqlCommand(sql, cn);
-            cmd.Parameters.AddWithValue("@t", entity.Texto);
-            cmd.Parameters.AddWithValue("@c", entity.EsCorrecta);
-            cmd.Parameters.AddWithValue("@p", entity.PreguntaID);
+            cmd.Parameters.AddWithValue("@t", dto.Texto);
+            cmd.Parameters.AddWithValue("@c", dto.EsCorrecta);
+            cmd.Parameters.AddWithValue("@p", dto.PreguntaID);
             await cn.OpenAsync();
+
             return Convert.ToInt32(await cmd.ExecuteScalarAsync());
         }
 
@@ -98,12 +101,14 @@ namespace SistemaAlumnosApi.Repositories.Sql
         /// </summary>
         /// <param name="entity">Entidad Respuesta con los valores actualizados.</param>
         /// <returns>True si la actualización fue exitosa, False en caso contrario.</returns>
-        public async Task<bool> UpdateAsync(Respuesta entity)
+        public async Task<bool> UpdateAsync(RespuestaUpdateDTO dto)
         {
+            var entity = RespuestaMapper.FromUpdateDTO(dto);
+
             const string sql = @"
-                UPDATE Respuestas
-                SET Texto=@t, EsCorrecta=@c, PreguntaID=@p
-                WHERE RespuestaID=@id";
+            UPDATE Respuestas
+            SET Texto=@t, EsCorrecta=@c, PreguntaID=@p
+            WHERE RespuestaID=@id";
             using var cn = new SqlConnection(_conn);
             using var cmd = new SqlCommand(sql, cn);
             cmd.Parameters.AddWithValue("@id", entity.RespuestaID);

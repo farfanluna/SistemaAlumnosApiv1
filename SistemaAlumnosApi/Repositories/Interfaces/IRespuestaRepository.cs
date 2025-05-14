@@ -1,4 +1,5 @@
-﻿using SistemaAlumnosApi.Models;
+﻿using SistemaAlumnosApi.DTOs;
+using SistemaAlumnosApi.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -28,14 +29,14 @@ namespace SistemaAlumnosApi.Repositories.Interfaces
         /// </summary>
         /// <param name="entity">Instancia de Respuesta que se va a agregar.</param>
         /// <returns>El identificador de la nueva respuesta creada.</returns>
-        Task<int> CreateAsync(Respuesta entity);
+        Task<int> CreateAsync(RespuestaCreateDTO entity);
 
         /// <summary>
         /// Actualiza los datos de una respuesta existente en la base de datos.
         /// </summary>
         /// <param name="entity">Instancia de Respuesta con los valores actualizados.</param>
         /// <returns>True si la actualización fue exitosa, False en caso contrario.</returns>
-        Task<bool> UpdateAsync(Respuesta entity);
+        Task<bool> UpdateAsync(RespuestaUpdateDTO entity);
 
         /// <summary>
         /// Elimina una respuesta de la base de datos.
