@@ -18,6 +18,7 @@ namespace SistemaAlumnosApi.Mappers
             {
                 AlumnoID = alumno.AlumnoID,
                 Nombre = alumno.Nombre,
+                Edad = alumno.Edad,
                 Email = alumno.Email,
                 Creditos = alumno.Creditos
             };
@@ -35,6 +36,7 @@ namespace SistemaAlumnosApi.Mappers
             {
                 Nombre = dto.Nombre,
                 Email = dto.Email,
+                Edad = dto.Edad,
                 Password = dto.Password, // 🔹 Guarda la contraseña solo en la creación
                 Creditos = dto.Creditos
             };
@@ -53,6 +55,7 @@ namespace SistemaAlumnosApi.Mappers
                 AlumnoID = dto.AlumnoID, // 🔹 Asegura que el ID sea el mismo al actualizar
                 Nombre = dto.Nombre,
                 Email = dto.Email,
+                Edad = dto.Edad,
                 Password = dto.Password,
                 Creditos = dto.Creditos
             };

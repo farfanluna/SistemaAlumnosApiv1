@@ -7,8 +7,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using SistemaAlumnosApi.Mappers;
 
-
-
 namespace SistemaAlumnosApi.Repositories.Sql
 {
     /// <summary>
@@ -22,18 +20,24 @@ namespace SistemaAlumnosApi.Repositories.Sql
         /// <summary>
         /// Constructor que inicializa la conexión con la base de datos.
         /// </summary>
-        /// <param name="cfg">Configuración utilizada para obtener la cadena de conexión.</param>
         public SqlAlumnoRepository(IConfiguration cfg) =>
             _conn = cfg.GetConnectionString("DefaultConnection")!;
 
         /// <summary>
         /// Obtiene todos los alumnos almacenados en la base de datos.
         /// </summary>
-        /// <returns>Lista de alumnos.</returns>
         public async Task<IEnumerable<AlumnoDTO>> GetAllAsync()
         {
             var alumnos = new List<Alumno>();
-            const string sql = @"SELECT AlumnoID, Nombre, Email, Creditos FROM Alumnos";
+
+            // ← Incluimos Edad en la consulta, en el orden correcto
+            const string sql = @"
+                SELECT AlumnoID,
+                       Nombre,
+                       Edad,
+                       Email,
+                       Creditos
+                  FROM Alumnos";
 
             using var cn = new SqlConnection(_conn);
             using var cmd = new SqlCommand(sql, cn);
@@ -44,31 +48,42 @@ namespace SistemaAlumnosApi.Repositories.Sql
             {
                 alumnos.Add(new Alumno
                 {
-                    AlumnoID = rd.GetInt32(0),
-                    Nombre = rd.GetString(1),
-                    Email = rd.GetString(2),
-                    Creditos = rd.GetInt32(3)
+                    AlumnoID = rd.GetInt32(0),   // AlumnoID
+                    Nombre = rd.GetString(1),  // Nombre
+                    Edad = rd.GetInt32(2),   // Edad
+                    Email = rd.GetString(3),  // Email
+                    Creditos = rd.GetInt32(4)    // Creditos
                 });
             }
 
+            // Convertimos la lista de entidades a DTOs
             return alumnos.Select(AlumnoMapper.ToDTO);
         }
+
         /// <summary>
         /// Obtiene un alumno por su correo electrónico.
         /// </summary>
-        /// <param name="email">Correo electrónico del alumno.</param>
-        /// <returns>Instancia del alumno si existe, null en caso contrario.</returns>
         public async Task<Alumno?> GetByEmailAsync(string email)
         {
             const string sql = @"
-              SELECT AlumnoID, Nombre, Edad, Email, Password, Creditos 
-              FROM Alumnos WHERE Email=@e";
+                SELECT AlumnoID,
+                       Nombre,
+                       Edad,
+                       Email,
+                       Password,
+                       Creditos
+                  FROM Alumnos
+                 WHERE Email = @e";
+
             using var cn = new SqlConnection(_conn);
             using var cmd = new SqlCommand(sql, cn);
             cmd.Parameters.AddWithValue("@e", email);
             await cn.OpenAsync();
             using var rd = await cmd.ExecuteReaderAsync();
-            if (!await rd.ReadAsync()) return null;
+
+            if (!await rd.ReadAsync())
+                return null;
+
             return new Alumno
             {
                 AlumnoID = rd.GetInt32(0),
@@ -83,11 +98,17 @@ namespace SistemaAlumnosApi.Repositories.Sql
         /// <summary>
         /// Obtiene un alumno específico por su identificador.
         /// </summary>
-        /// <param name="id">Identificador único del alumno.</param>
-        /// <returns>Instancia de Alumno si existe, null si no se encuentra.</returns>
         public async Task<AlumnoDTO?> GetByIdAsync(int id)
         {
-            const string sql = @"SELECT AlumnoID, Nombre, Email, Creditos FROM Alumnos WHERE AlumnoID=@id";
+            // ← Incluimos Edad en el SELECT y en el orden correcto
+            const string sql = @"
+                SELECT AlumnoID,
+                       Nombre,
+                       Edad,
+                       Email,
+                       Creditos
+                  FROM Alumnos
+                 WHERE AlumnoID = @id";
 
             using var cn = new SqlConnection(_conn);
             using var cmd = new SqlCommand(sql, cn);
@@ -95,23 +116,24 @@ namespace SistemaAlumnosApi.Repositories.Sql
             await cn.OpenAsync();
             using var rd = await cmd.ExecuteReaderAsync();
 
-            if (!await rd.ReadAsync()) return null;
+            if (!await rd.ReadAsync())
+                return null;
 
-            // 📌 Convertimos la entidad Alumno a DTO usando AlumnoMapper
-            return AlumnoMapper.ToDTO(new Alumno
+            var entidad = new Alumno
             {
                 AlumnoID = rd.GetInt32(0),
                 Nombre = rd.GetString(1),
-                Email = rd.GetString(2),
-                Creditos = rd.GetInt32(3)
-            });
+                Edad = rd.GetInt32(2),
+                Email = rd.GetString(3),
+                Creditos = rd.GetInt32(4)
+            };
+
+            return AlumnoMapper.ToDTO(entidad);
         }
 
         /// <summary>
         /// Crea un nuevo alumno en la base de datos y devuelve su ID generado.
         /// </summary>
-        /// <param name="dto">Entidad Alumno a insertar.</param>
-        /// <returns>Identificador del nuevo alumno.</returns>
         public async Task<int> CreateAsync(Alumno dto)
         {
             const string sql = @"
@@ -126,22 +148,35 @@ namespace SistemaAlumnosApi.Repositories.Sql
             cmd.Parameters.AddWithValue("@m", dto.Email);
             cmd.Parameters.AddWithValue("@p", dto.Password);
             cmd.Parameters.AddWithValue("@c", dto.Creditos);
-            await cn.OpenAsync();
 
+            await cn.OpenAsync();
             return Convert.ToInt32(await cmd.ExecuteScalarAsync());
         }
 
         /// <summary>
         /// Actualiza un alumno existente en la base de datos.
         /// </summary>
-        /// <param name="dto">Entidad Alumno con los valores actualizados.</param>
-        /// <returns>True si la actualización fue exitosa, False en caso contrario.</returns>
         public async Task<bool> UpdateAsync(Alumno dto)
         {
-            const string sql = @"
-                UPDATE Alumnos
-                SET Nombre=@n, Edad=@e, Email=@m, Password=@p, Creditos=@c
-                WHERE AlumnoID=@id";
+            bool cambiaPwd = !string.IsNullOrWhiteSpace(dto.Password);
+
+            // Si no cambiamos password, no lo incluimos en el SET
+            string sql = cambiaPwd
+                ? @"
+                    UPDATE Alumnos
+                       SET Nombre   = @n,
+                           Edad     = @e,
+                           Email    = @m,
+                           Password = @p,
+                           Creditos = @c
+                     WHERE AlumnoID = @id"
+                : @"
+                    UPDATE Alumnos
+                       SET Nombre   = @n,
+                           Edad     = @e,
+                           Email    = @m,
+                           Creditos = @c
+                     WHERE AlumnoID = @id";
 
             using var cn = new SqlConnection(_conn);
             using var cmd = new SqlCommand(sql, cn);
@@ -149,27 +184,27 @@ namespace SistemaAlumnosApi.Repositories.Sql
             cmd.Parameters.AddWithValue("@n", dto.Nombre);
             cmd.Parameters.AddWithValue("@e", dto.Edad);
             cmd.Parameters.AddWithValue("@m", dto.Email);
-            cmd.Parameters.AddWithValue("@p", dto.Password);
             cmd.Parameters.AddWithValue("@c", dto.Creditos);
-            await cn.OpenAsync();
 
+            if (cambiaPwd)
+                cmd.Parameters.AddWithValue("@p", dto.Password!);
+
+            await cn.OpenAsync();
             return await cmd.ExecuteNonQueryAsync() > 0;
         }
 
         /// <summary>
         /// Elimina un alumno de la base de datos.
         /// </summary>
-        /// <param name="id">Identificador único del alumno a eliminar.</param>
-        /// <returns>True si la eliminación fue exitosa, False en caso contrario.</returns>
         public async Task<bool> DeleteAsync(int id)
         {
-            const string sql = @"DELETE FROM Alumnos WHERE AlumnoID=@id";
+            const string sql = @"DELETE FROM Alumnos WHERE AlumnoID = @id";
 
             using var cn = new SqlConnection(_conn);
             using var cmd = new SqlCommand(sql, cn);
             cmd.Parameters.AddWithValue("@id", id);
-            await cn.OpenAsync();
 
+            await cn.OpenAsync();
             return await cmd.ExecuteNonQueryAsync() > 0;
         }
     }
